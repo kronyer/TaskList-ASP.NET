@@ -1,0 +1,49 @@
+﻿@using BlazorApp2.Services
+
+
+
+@inject ToDoService TodoService
+@using BlazorApp2.Models
+
+@if (EditedTodo != null)
+{
+    <form>
+        <div class="mt-2">
+            <label class="form-label" for="Titulo"></label>
+            <InputText class="form-control" required @bind-Value="EditedTodo.Title"/>
+        </div>
+        <div class="mt-2">
+            <label class="form-label" for="Descrição"></label>
+            <InputTextArea class="form-control" required @bind-Value="EditedTodo.Description" />
+        </div>
+        <div class="mt-2">
+            <label class="form-label" for="Prioridade"></label>
+            <select class="form-select" @bind="EditedTodo.Priority">
+                <option value="null">-- Selecione --</option>
+                @foreach(var value in Enum.GetValues(typeof(ToDoPriority)))
+                {
+                    <option value="@value">@value</option>
+
+                }
+            </select>
+        </div>
+        <div class="mt-4 mb-2">
+            <button class="btn btn-dark" @onclick="() => SaveTodoAsync()">Salvar</button>
+            <button class="btn btn-default">Cancelar</button>
+        </div>
+    </form>
+}
+
+@code{
+    [Parameter]
+    public ToDo? EditedTodo { get; set; }
+
+
+    private async void SaveTodoAsync()
+    {
+        if (EditedTodo is not null)
+        {
+           EditedTodo = await TodoService.UpdateAsync(EditedTodo);
+        }
+    }
+}

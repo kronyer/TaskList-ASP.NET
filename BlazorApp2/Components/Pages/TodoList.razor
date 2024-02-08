@@ -1,0 +1,118 @@
+﻿@page "/todolist"
+@rendermode InteractiveServer
+@using BlazorApp2.Models
+@using BlazorApp2.Services
+@inject ToDoService todoService
+<PageTitle>Lista de Tarefas</PageTitle>
+
+<h3>Lista de Tarefas</h3>
+
+<button class="btn btn-dark" @onclick = "GetActiveTodoAsync">Recarregar</button>
+
+@if (toDos != null && toDos.Any())
+{
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Description</th>
+            <th>Done</th>
+            <th>DoneDate</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var todo in toDos)
+        {
+                <tr style="cursor:pointer;@(todo.Done ? "text-decoration: line-through;" : "")"
+                class="@(todo.Priority == ToDoPriority.Urgent ? "table-danger" : "")"
+                @onclick="() => ChangePriorityAsync(todo)">
+                    <td>@todo.Title</td>
+                <td>@todo.Priority</td>
+                <td>@todo.Description</td>
+                <td><input type="checkbox" checked="@todo.Done" @onchange="() => UpdateDoneDate(todo)" /></td>
+                    <td>
+                        @(todo.DoneDate.HasValue ? todo.DoneDate.Value.ToString("dd/MM/yyyy") : "")
+                    </td>
+                <td>
+                        <button class="btn btn-dark" @onclick="() => EditTodo(todo)">Editar</button>
+                    <button class="btn btn-danger" @onclick="() => RemoveTodoAsync(todo)">Excluir</button>
+                </td>
+            </tr>
+                @if (todo.Edit)
+                {
+                    <tr>
+                        <td colspan="6">
+                        <h4 class="mt-2">Modificar Tarefa</h4>
+                        <FormTodo EditedTodo="todo"></FormTodo>
+                    </td>
+                </tr>
+            }
+            
+        }
+           
+    </tbody>
+</table>
+}
+else
+{
+<p>Nenhuma tarefa listada</p>
+
+}
+
+<button class="btn btn-dark" @onclick="AddToDoAsync">Adicionar Tarefa</button>
+@code {
+    private List<ToDo>? toDos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetActiveTodoAsync();
+    }
+
+    private async Task GetActiveTodoAsync()
+    {
+        toDos = await todoService.GetActiveToDosAsync();
+    }
+
+    private async Task AddToDoAsync()
+    {
+        await todoService.NewToDoAsync();
+        await GetActiveTodoAsync();
+    }
+
+    private void UpdateDoneDate(ToDo todo)
+    {
+        if (todo.Done)
+        {
+            todo.DoneDate = null;
+            todo.Done = false;
+
+        }
+        else
+        {
+            todo.DoneDate = DateTime.Now;
+            todo.Done = true;
+        }
+    }
+
+    private async Task RemoveTodoAsync(ToDo todo)
+    {
+        await todoService.RemoveAsync(todo);
+        await GetActiveTodoAsync();
+    }
+
+    private void EditTodo(ToDo todo)
+    {
+        todo.Edit = !todo.Edit;
+    }
+
+    private async void ChangePriorityAsync(ToDo toDo)
+    {
+        var priorityIndex = (int)toDo.Priority;
+        priorityIndex++;
+        toDo.Priority = priorityIndex > 3 ? ToDoPriority.Urgent : (ToDoPriority)priorityIndex;
+        await todoService.UpdateAsync(toDo);
+        await GetActiveTodoAsync();
+    }
+}
